@@ -416,9 +416,9 @@ mod tests {
 
     #[test]
     fn test_invalid_fixture_scope() {
-        assert_eq!(
-            FixtureScope::try_from("invalid".to_string()),
-            Err("Invalid fixture scope `invalid`".to_string())
-        );
+        // the error now names the accepted set, so the assertion matches on the prefix
+        let err = FixtureScope::try_from("invalid".to_string()).unwrap_err();
+        assert!(err.starts_with("Invalid fixture scope `invalid`"), "{err}");
+        assert!(err.contains("function, module, package, session"), "{err}");
     }
 }

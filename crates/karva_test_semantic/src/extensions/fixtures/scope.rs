@@ -49,12 +49,16 @@ impl TryFrom<String> for FixtureScope {
     type Error = String;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        match s.as_str() {
+        // pytest accepts the scope name in any case ("Session", "SESSION"), so the
+        // conversion normalises before matching instead of rejecting the fixture.
+        match s.trim().to_ascii_lowercase().as_str() {
             "module" => Ok(Self::Module),
             "session" => Ok(Self::Session),
             "package" => Ok(Self::Package),
             "function" => Ok(Self::Function),
-            _ => Err(format!("Invalid fixture scope `{s}`")),
+            _ => Err(format!(
+                "Invalid fixture scope `{s}`; expected one of function, module, package, session"
+            )),
         }
     }
 }
@@ -84,6 +88,29 @@ pub fn resolve_dynamic_scope(
         .map_err(|e| format!("Dynamic scope function must return a string: {e}"))?;
 
     FixtureScope::try_from(scope_str)
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::FixtureScope;
+
+    #[test]
+    fn parses_lowercase_scope() {
+        assert_eq!(FixtureScope::try_from("module".to_string()), Ok(FixtureScope::Module));
+    }
+
+    #[test]
+    fn parses_mixed_case_scope() {
+        assert_eq!(FixtureScope::try_from("Session".to_string()), Ok(FixtureScope::Session));
+        assert_eq!(FixtureScope::try_from("  PACKAGE ".to_string()), Ok(FixtureScope::Package));
+    }
+
+    #[test]
+    fn rejects_unknown_scope_with_the_valid_set() {
+        let err = FixtureScope::try_from("worker".to_string()).unwrap_err();
+        assert!(err.contains("Invalid fixture scope `worker`"), "{err}");
+        assert!(err.contains("function, module, package, session"), "{err}");
+    }
 }
 
 /// Converts either a scope string or dynamic scope callable into a concrete lifetime.

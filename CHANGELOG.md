@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- fixture scopes are parsed case-insensitively, so `Session` and `  package ` no longer fail discovery
+- the invalid-scope error now lists the accepted values
+
+
 ## 0.0.1-alpha.13
 
 Karva now supports Python 3.15 ([#1572](https://github.com/MatthewMckee4/karva/pull/1572)).
